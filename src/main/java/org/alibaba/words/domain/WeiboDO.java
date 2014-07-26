@@ -2,23 +2,23 @@ package org.alibaba.words.domain;
 
 import java.util.Date;
 
-public class WeiBoDO {
-	
-	private long id; //数据库ID
-	
-	private long weiBoId; //微博ID
-	
-	private String weiBoText; //微博内容
-	
-	private Date createdTime; // 微博创建时间
-	
-	private String userId; //微博用户ID
-	
-	private String nickName; //微博昵称
-	
-	private int repostsCount; //转发数
-	
-	private int commentsCount; //评论数
+public class WeiboDO {
+
+	private long id;
+
+	private long weiboId;
+
+	private String weiboText; // main content
+
+	private Date createdTime;
+
+	private String userId; //id of the user who create the weibo
+
+	private String nickName; //name of the user
+
+	private int repostsCount;
+
+	private int commentsCount;
 
 	public long getId() {
 		return id;
@@ -29,19 +29,19 @@ public class WeiBoDO {
 	}
 
 	public long getWeiBoId() {
-		return weiBoId;
+		return weiboId;
 	}
 
 	public void setWeiBoId(long weiBoId) {
-		this.weiBoId = weiBoId;
+		this.weiboId = weiBoId;
 	}
 
 	public String getWeiBoText() {
-		return weiBoText;
+		return weiboText;
 	}
 
 	public void setWeiBoText(String weiBoText) {
-		this.weiBoText = weiBoText;
+		this.weiboText = weiBoText;
 	}
 
 	public Date getCreatedTime() {
@@ -67,7 +67,7 @@ public class WeiBoDO {
 	public void setCommentsCount(int commentsCount) {
 		this.commentsCount = commentsCount;
 	}
-	
+
 
 	public String getUserId() {
 		return userId;
@@ -87,10 +87,10 @@ public class WeiBoDO {
 
 	@Override
 	public String toString() {
-		return "WeiBoDO [id=" + id + ", weiBoId=" + weiBoId + ", weiBoText="
-				+ weiBoText + ", createdTime=" + createdTime + ", userId="
+		return "WeiBoDO [id=" + id + ", weiBoId=" + weiboId + ", weiBoText="
+				+ weiboText + ", createdTime=" + createdTime + ", userId="
 				+ userId + ", nickName=" + nickName + ", repostsCount="
 				+ repostsCount + ", commentsCount=" + commentsCount + "]";
 	}
-	
+
 }

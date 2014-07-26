@@ -1,6 +1,6 @@
 package org.alibaba.words.common;
 
-public class TeResult<T> {
+public class CrawlerResult<T> {
 	
 	private boolean success = true;
 	

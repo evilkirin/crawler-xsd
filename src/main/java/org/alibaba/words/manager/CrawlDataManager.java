@@ -2,10 +2,10 @@ package org.alibaba.words.manager;
 
 import java.util.List;
 
-import org.alibaba.words.common.TeResult;
+import org.alibaba.words.common.CrawlerResult;
 
-import org.alibaba.words.domain.WeiBoDO;
+import org.alibaba.words.domain.WeiboDO;
 
 public interface CrawlDataManager {
-	public TeResult<List<WeiBoDO>> getDataFromWeb(String accessToken, String nickName, long sinceId);
+	public CrawlerResult<List<WeiboDO>> getDataFromWeb(String accessToken, String nickName, long sinceId);
 }
