@@ -6,12 +6,14 @@ public class UtilConfig {
 
 	public static String[] accessTokens;
 	public static long[] sinceIds;
+	
+	public static final int defaultSinceId = 1;
 
 	static {
 		accessTokens = WeiboConfig.getValue("accessToken").split(",");
 		sinceIds = new long[accessTokens.length];
 		for (int i = 0; i < sinceIds.length; i++) {
-			sinceIds[i] = 1;
+			sinceIds[i] = defaultSinceId;
 		}
 	}
 

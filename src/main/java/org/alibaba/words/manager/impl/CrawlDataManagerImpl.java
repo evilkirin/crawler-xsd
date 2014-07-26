@@ -20,21 +20,23 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 	private static final Logger logger = LoggerFactory.getLogger(CrawlDataManagerImpl.class);
 
 
-	private static final int count = 100;
+	/*public static final int count = 100;//每次请求获取的记录条数，API限制最大设置为100
+	
+	public static final int maxPage = 50;//当sinceId为1时，也就是第一次请求数据时，为了满足数据量，会多次API请求
+	                                      //但是受限于一个token一小时150次请求，所以这里请求50页数据
+*/	
+	
 	@Override
-	public CrawlerResult<List<WeiboDO>> getDataFromWeb(String accessToken, long sinceId) {
+	public CrawlerResult<List<WeiboDO>> getDataFromWeb(String accessToken, Paging page, long sinceId) {
 		CrawlerResult<List<WeiboDO>> teResult = new CrawlerResult<List<WeiboDO>>();
 		List<WeiboDO> weiBoDOList = new ArrayList<WeiboDO>();
 		Timeline tm = new Timeline();
 		tm.client.setToken(accessToken);
-		Paging page = new Paging();
-		page.setCount(count);
-		page.setSinceId(sinceId);
 		try {
-			StatusWapper status = tm.getFriendsTimeline(0, 0, page);
+			StatusWapper status = tm.getFriendsTimeline(0, 1, page);
 			for(Status s : status.getStatuses()){
 				WeiboDO weiBoDO = packWeiBoDO(s);
-				System.out.println(s.getText());
+				System.out.println(s.getUser().getScreenName()+"..."+s.getId()+"..."+s.getCreatedAt()+"..."+s.getText());
 				weiBoDOList.add(weiBoDO);
 			}
 		} catch (WeiboException e) {
