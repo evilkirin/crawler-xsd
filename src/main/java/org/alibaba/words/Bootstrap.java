@@ -1,4 +1,4 @@
-package org.alibaba.words.manager.impl;
+package org.alibaba.words;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
