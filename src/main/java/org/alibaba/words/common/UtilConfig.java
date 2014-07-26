@@ -17,8 +17,8 @@ public class UtilConfig {
 		}
 	}
 
-	public static final String ERROR_CODE_NEED_SLEEP = "E001"; //主要处理接口调用次数过多
-	public static final String ERROR_CODE_TIME_EXCEPTION = "E002";  //处理接口超时
-	public static final String ERROR_CODE_METHOD_ERROR = "E003";  //方法、参数等错误，调用不成功
+	public static final String ERROR_CODE_NEED_SLEEP = "E001"; //涓昏澶勭悊鎺ュ彛璋冪敤娆℃暟杩囧
+	public static final String ERROR_CODE_TIME_EXCEPTION = "E002";  //澶勭悊鎺ュ彛瓒呮椂
+	public static final String ERROR_CODE_METHOD_ERROR = "E003";  //鏂规硶銆佸弬鏁扮瓑閿欒锛岃皟鐢ㄤ笉鎴愬姛
 
 }
