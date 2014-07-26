@@ -19,6 +19,8 @@ import weibo4j.model.WeiboException;
 public class CrawlDataManagerImpl implements CrawlDataManager{
 	private static final Logger logger = LoggerFactory.getLogger(CrawlDataManagerImpl.class);
 
+
+	private static final int count = 100;
 	@Override
 	public CrawlerResult<List<WeiboDO>> getDataFromWeb(String accessToken, String nickName, long sinceId) {
 		CrawlerResult<List<WeiboDO>> teResult = new CrawlerResult<List<WeiboDO>>();
@@ -26,9 +28,10 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 		Timeline tm = new Timeline();
 		tm.client.setToken(accessToken);
 		Paging page = new Paging();
+		page.setCount(count);
 		page.setSinceId(sinceId);
 		try {
-			StatusWapper status = tm.getFriendsTimeline(0, 0, new Paging(1));
+			StatusWapper status = tm.getFriendsTimeline(0, 0, page);
 			for(Status s : status.getStatuses()){
 				WeiboDO weiBoDO = packWeiBoDO(s);
 				System.out.println(s.getText());
