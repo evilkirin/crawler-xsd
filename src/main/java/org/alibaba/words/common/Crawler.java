@@ -28,6 +28,7 @@ public class Crawler implements Runnable {
 	private String accessToken;
 	private long sinceId;
 	private Timeline timeline;
+	private static final WeiboDAO weiboDAO = WeiboDAOImpl.getInstance();
 
 	public Crawler(int index, String accessToken) {
 		this.index = index;
@@ -40,49 +41,66 @@ public class Crawler implements Runnable {
 		logger.info("#Crawler " + index + " begins");
 
 		Thread currentThread = Thread.currentThread();
-		WeiboDAO weiboDAO = WeiboDAOImpl.getInstance();
 
 		while (!currentThread.isInterrupted()) {
-			int pageCount = sinceId == UtilConfig.defaultSinceId ? maxPage : 1;
-			long workingSinceId = sinceId;
-			for (int i = 1; i <= pageCount; i++) {
-				try {
-					List<WeiboDO> list = queryWeiboList(getPage(workingSinceId, i));
+			boolean initialLoad = sinceId == UtilConfig.defaultSinceId;
 
-					if (i == 1) {
-						updateSinceId(list);
-					}
+			try {
+				List<WeiboDO> list = queryWeiboList(getPage(sinceId, 1));
+				updateSinceId(list);
+				int recordsInserted = weiboDAO.batchInsert(list);
+				logger.info("# " + recordsInserted + " weibo inserted to the db.");
 
-					int recordsInserted = weiboDAO.batchInsert(list);
-					logger.info("# " + recordsInserted + " weibo inserted to the db.");
-
-					int resultCount = list.size();
-					// 表示数据不够maxPage*count
-					// 注意，你要求每页取count条记录，api最多返回count-1条数据
-					if (resultCount < count - 1) {
-						break;
-					}
-				} catch(WeiboException e) {
-					int errorCode = e.getErrorCode();
-					logger.error("fail to query weibo info accessToken = " + accessToken
-							+ ", sinceId = " + sinceId, e);
-					if(currentThread.isInterrupted())
-						return;
-					if (isRequestTooFrequent(errorCode)) {
-						logger.error("Too many request, some rest is needed.");
-						sleepForOneHourUnlessInterrupted();
-					}else if (isRequestTimeout(errorCode)) {
-						logger.error("Timeout, resume later.");
-						sleepFor5MinutesUnlessInterrupted();
-					} else {
-						logger.error("Invalid parameters. Please check before execute.");
-						return;
-					}
+				if (initialLoad) {
+					loadMoreThanJustRecentWeibo();
 				}
+			} catch (WeiboException e) {
+				if (currentThread.isInterrupted())
+					return;
+				handleException(e);
 			}
-			if(currentThread.isInterrupted())
+
+			if (currentThread.isInterrupted())
 				return;
 			sleepFor5MinutesUnlessInterrupted();
+		}
+	}
+
+	private void loadMoreThanJustRecentWeibo() {
+		List<WeiboDO> list;
+		int recordsInserted;
+		for (int i = 2; i <= maxPage; i++) {
+			try {
+				list = queryWeiboList(getPage(UtilConfig.defaultSinceId, i));
+
+				recordsInserted = weiboDAO.batchInsert(list);
+				logger.info("# " + recordsInserted + " weibo inserted to the db.");
+
+				int resultCount = list.size();
+				// 表示数据不够maxPage*count
+				// 注意，你要求每页取count条记录，api最多返回count-1条数据
+				if (resultCount < count - 1) {
+					break;
+				}
+			} catch (WeiboException e) {
+				handleException(e);
+			}
+		}
+	}
+
+	private void handleException(WeiboException e) {
+		int errorCode = e.getErrorCode();
+		logger.error("fail to query weibo info accessToken = " + accessToken + ", sinceId = "
+				+ sinceId, e);
+		if (isRequestTooFrequent(errorCode)) {
+			logger.error("Too many request, some rest is needed.");
+			sleepForOneHourUnlessInterrupted();
+		} else if (isRequestTimeout(errorCode)) {
+			logger.error("Timeout, resume later.");
+			sleepFor5MinutesUnlessInterrupted();
+		} else {
+			logger.error("Invalid parameters. Please check before execute.");
+			throw new RuntimeException("Invalid configuration.");
 		}
 	}
 
