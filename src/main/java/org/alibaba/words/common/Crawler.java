@@ -16,6 +16,10 @@ public class Crawler implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(WeiboDAOImpl.class);
 	private int index;
 
+	public Crawler(int index) {
+		this.index = index;
+	}
+
 	public void run() {
 		System.out.println("#Thread " + index + " begins");
 		while (true) {
@@ -67,7 +71,7 @@ public class Crawler implements Runnable {
 	private long updateSinceId(CrawlerResult<List<WeiboDO>> crawlerResult) {
 		long sinceIdIndex = UtilConfig.sinceIds[index];
 		for (WeiboDO weiBoDO : crawlerResult.getModel()) {
-			sinceIdIndex = sinceIdIndex > weiBoDO.getWeiBoId() ? sinceIdIndex : weiBoDO.getWeiBoId();
+			sinceIdIndex = sinceIdIndex > weiBoDO.getWeiboId() ? sinceIdIndex : weiBoDO.getWeiboId();
 		}
 		UtilConfig.sinceIds[index] = UtilConfig.sinceIds[index] > sinceIdIndex ? UtilConfig.sinceIds[index]
 				: sinceIdIndex;
@@ -83,13 +87,4 @@ public class Crawler implements Runnable {
 			e.printStackTrace();
 		}
 	}
-
-	public int getIndex() {
-		return index;
-	}
-
-	public void setIndex(int index) {
-		this.index = index;
-	}
-
 }
