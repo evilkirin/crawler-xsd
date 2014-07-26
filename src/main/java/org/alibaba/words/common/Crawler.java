@@ -22,8 +22,7 @@ public class Crawler implements Runnable {
 			CrawlDataManager crawlDataManager = new CrawlDataManagerImpl();
 			WeiboDAO weiboDAO = WeiboDAOImpl.getInstance();
 			CrawlerResult<List<WeiboDO>> crawlerResult = crawlDataManager.getDataFromWeb(
-					UtilConfig.accessTokens[index], UtilConfig.nickNames[index],
-					UtilConfig.sinceIds[index]);
+					UtilConfig.accessTokens[index],UtilConfig.sinceIds[index]);
 			if (crawlerResult == null) {
 				logger.error("get data from web error");
 				sleepFor5MinutesUnlessInterrupted();
@@ -68,7 +67,7 @@ public class Crawler implements Runnable {
 	private long updateSinceId(CrawlerResult<List<WeiboDO>> crawlerResult) {
 		long sinceIdIndex = UtilConfig.sinceIds[index];
 		for (WeiboDO weiBoDO : crawlerResult.getModel()) {
-			sinceIdIndex = sinceIdIndex > weiBoDO.getId() ? sinceIdIndex : weiBoDO.getId();
+			sinceIdIndex = sinceIdIndex > weiBoDO.getWeiBoId() ? sinceIdIndex : weiBoDO.getWeiBoId();
 		}
 		UtilConfig.sinceIds[index] = UtilConfig.sinceIds[index] > sinceIdIndex ? UtilConfig.sinceIds[index]
 				: sinceIdIndex;
