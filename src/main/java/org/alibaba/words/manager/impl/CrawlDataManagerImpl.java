@@ -22,7 +22,7 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 
 	private static final int count = 100;
 	@Override
-	public CrawlerResult<List<WeiboDO>> getDataFromWeb(String accessToken, String nickName, long sinceId) {
+	public CrawlerResult<List<WeiboDO>> getDataFromWeb(String accessToken, long sinceId) {
 		CrawlerResult<List<WeiboDO>> teResult = new CrawlerResult<List<WeiboDO>>();
 		List<WeiboDO> weiBoDOList = new ArrayList<WeiboDO>();
 		Timeline tm = new Timeline();
@@ -41,7 +41,7 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 			int errorCode = e.getErrorCode();
 			String errorInfo = e.getError();
 
-			logger.error("fail to query weibo info nickName = " + nickName + ", accessToken = " + accessToken + ", sinceId = " + sinceId, e);
+			logger.error("fail to query weibo info accessToken = " + accessToken + ", sinceId = " + sinceId, e);
 			if (10004 == errorCode || 10022 == errorCode || 10023 == errorCode || 10024 == errorCode) {
 				logger.error("Too many request, some rest is needed.");
 				teResult.setFailureResult(UtilConfig.ERROR_CODE_NEED_SLEEP, errorInfo);

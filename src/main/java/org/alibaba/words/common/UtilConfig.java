@@ -5,13 +5,11 @@ import weibo4j.util.WeiboConfig;
 public class UtilConfig {
 
 	public static String[] accessTokens;
-	public static String[] nickNames;
 	public static long[] sinceIds;
 
 	static {
 		accessTokens = WeiboConfig.getValue("accessToken").split(",");
-		nickNames = WeiboConfig.getValue("nickName").split(",");
-		sinceIds = new long[nickNames.length];
+		sinceIds = new long[accessTokens.length];
 		for (int i = 0; i < sinceIds.length; i++) {
 			sinceIds[i] = 1;
 		}

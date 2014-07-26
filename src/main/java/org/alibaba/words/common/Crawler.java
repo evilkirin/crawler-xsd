@@ -22,8 +22,7 @@ public class Crawler implements Runnable {
 			CrawlDataManager crawlDataManager = new CrawlDataManagerImpl();
 			WeiboDAO weiboDAO = new WeiboDAOImpl();
 			CrawlerResult<List<WeiboDO>> crawlerResult = crawlDataManager.getDataFromWeb(
-					UtilConfig.accessTokens[index], UtilConfig.nickNames[index],
-					UtilConfig.sinceIds[index]);
+					UtilConfig.accessTokens[index],UtilConfig.sinceIds[index]);
 			if (crawlerResult == null) {
 				logger.error("get data from web error");
 				sleepFor5MinutesUnlessInterrupted();
