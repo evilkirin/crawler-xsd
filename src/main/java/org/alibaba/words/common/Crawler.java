@@ -49,41 +49,54 @@ public class Crawler implements Runnable {
 			}
 			long workingSinceId = sinceId;
 			for (int i = 1; i <= pageCount; i++) {
-				CrawlerResult<List<WeiboDO>> crawlerResult = getDataFromWeb(getPage(workingSinceId, i));
+				try {
+					List<WeiboDO> list = queryWeiboList(getPage(workingSinceId, i));
 
-				if (crawlerResult.isSuccess() == false) {
-					if (crawlerResult.getErrorCode() == UtilConfig.ERROR_CODE_NEED_SLEEP) {
+					if (i == 1) {
+						updateSinceId(list);
+						workingSinceId = sinceId;
+					}
+
+					int recordsInserted = weiboDAO.batchInsert(list);
+					logger.info("# " + recordsInserted + " weibo inserted to the db.");
+
+					int resultCount = list.size();
+					// 表示数据不够maxPage*count
+					// 注意，你要求每页取count条记录，api最多返回count-1条数据
+					if (resultCount < count - 1) {
+						break;
+					}
+				} catch(WeiboException e) {
+					int errorCode = e.getErrorCode();
+					logger.error("fail to query weibo info accessToken = " + accessToken
+							+ ", sinceId = " + sinceId, e);
+					if(currentThread.isInterrupted())
+						return;
+					if (isRequestTooFrequent(errorCode)) {
+						logger.error("Too many request, some rest is needed.");
 						sleepForOneHourUnlessInterrupted();
-						continue;
-					}
-
-					if (crawlerResult.getErrorCode() == UtilConfig.ERROR_CODE_TIME_EXCEPTION) {
+					}else if (isRequestTimeout(errorCode)) {
+						logger.error("Timeout, resume later.");
 						sleepFor5MinutesUnlessInterrupted();
-						continue;
-					}
-
-					if (crawlerResult.getErrorCode() == UtilConfig.ERROR_CODE_METHOD_ERROR) {
-						logger.warn("#Thread " + index + " exits.");
+					} else {
+						logger.error("Invalid parameters. Please check before execute.");
 						return;
 					}
 				}
-				if (i == 1) {
-					updateSinceId(crawlerResult);
-					workingSinceId = sinceId;
-				}
-
-				int recordsInserted = weiboDAO.batchInsert(crawlerResult.getModel());
-				logger.info("# " + recordsInserted + " weibo inserted to the db.");
-
-				int resultCount = crawlerResult.getModel().size();
-				// 表示数据不够maxPage*count
-				// 注意，你要求每页取count条记录，api最多返回count-1条数据
-				if (resultCount < count - 1) {
-					break;
-				}
 			}
+			if(currentThread.isInterrupted())
+				return;
 			sleepFor5MinutesUnlessInterrupted();
 		}
+	}
+
+	private boolean isRequestTimeout(int errorCode) {
+		return 10010 == errorCode || 10009 == errorCode;
+	}
+
+	private boolean isRequestTooFrequent(int errorCode) {
+		return 10004 == errorCode || 10022 == errorCode || 10023 == errorCode
+				|| 10024 == errorCode;
 	}
 
 	private Paging getPage(long currentSince, int i) {
@@ -92,37 +105,6 @@ public class Crawler implements Runnable {
 		page.setPage(i);
 		page.setSinceId(currentSince);
 		return page;
-	}
-
-	public CrawlerResult<List<WeiboDO>> getDataFromWeb(Paging page) {
-		CrawlerResult<List<WeiboDO>> crawlerResult = new CrawlerResult<List<WeiboDO>>();
-		List<WeiboDO> weiboDOList;
-		try {
-			weiboDOList = queryWeiboList(page);
-		} catch (WeiboException e) {
-			int errorCode = e.getErrorCode();
-			String errorInfo = e.getError();
-
-			logger.error("fail to query weibo info accessToken = " + accessToken
-					+ ", sinceId = " + sinceId, e);
-			if (10004 == errorCode || 10022 == errorCode || 10023 == errorCode
-					|| 10024 == errorCode) {
-				logger.error("Too many request, some rest is needed.");
-				crawlerResult.setFailureResult(UtilConfig.ERROR_CODE_NEED_SLEEP, errorInfo);
-				return crawlerResult;
-			}
-			if (10010 == errorCode || 10009 == errorCode) {
-				logger.error("Timeout, resume later.");
-				crawlerResult
-						.setFailureResult(UtilConfig.ERROR_CODE_TIME_EXCEPTION, errorInfo);
-				return crawlerResult;
-			}
-			logger.error("Invalid parameters. Please check before execute.");
-			crawlerResult.setFailureResult(UtilConfig.ERROR_CODE_METHOD_ERROR, errorInfo);
-			return crawlerResult;
-		}
-		crawlerResult.setModel(weiboDOList);
-		return crawlerResult;
 	}
 
 	private List<WeiboDO> queryWeiboList(Paging page) throws WeiboException {
@@ -149,9 +131,9 @@ public class Crawler implements Runnable {
 		return weiBoDO;
 	}
 
-	private boolean updateSinceId(CrawlerResult<List<WeiboDO>> crawlerResult) {
+	private boolean updateSinceId(List<WeiboDO> list) {
 		long old = sinceId, newSinceId = -1;
-		for (WeiboDO weiBoDO : crawlerResult.getModel()) {
+		for (WeiboDO weiBoDO : list) {
 			newSinceId = old > weiBoDO.getWeiboId() ? old : weiBoDO.getWeiboId();
 		}
 		sinceId = old > newSinceId ? old : newSinceId;
