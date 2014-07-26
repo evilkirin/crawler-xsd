@@ -14,6 +14,7 @@ public class CrawlThread implements Runnable{
 	private static final Logger log = Logger.getLogger(CrawlThread.class);
 	private static final long oneHour = 65 * 60 * 1000;
 	private static final long fiveMinutes = 5 * 60 * 1000;
+	private static final long oneMinute = 1 * 60 * 1000;
 	private int index;
 	
     public void run() {
@@ -26,7 +27,7 @@ public class CrawlThread implements Runnable{
     		if (teResult == null) {
     			log.error("get data from web error");
     			try {
-    				Thread.sleep(fiveMinutes);
+    				Thread.sleep(oneMinute);
     			} catch (InterruptedException e) {
     				log.error("sleep error", e);
     				e.printStackTrace();
@@ -47,7 +48,7 @@ public class CrawlThread implements Runnable{
     		
     		if (teResult.isSuccess() == false && teResult.getErrorCode() == UtilConfig.ERROR_CODE_TIME_EXCEPTION) {
     			try {
-    				Thread.sleep(fiveMinutes);
+    				Thread.sleep(oneMinute);
     			} catch (InterruptedException e) {
     				log.error("sleep error", e);
     				e.printStackTrace();
@@ -64,12 +65,12 @@ public class CrawlThread implements Runnable{
     		long sinceIdIndex = UtilConfig.sinceIds[index];
     		for (WeiBoDO weiBoDO : teResult.getModel()) {
     			WeiBoDAO.insert(weiBoDO);
-    			sinceIdIndex = sinceIdIndex > weiBoDO.getId() ? sinceIdIndex : weiBoDO.getId();
+    			sinceIdIndex = sinceIdIndex > weiBoDO.getWeiBoId() ? sinceIdIndex : weiBoDO.getWeiBoId();
     		}		
 
     		UtilConfig.sinceIds[index] = UtilConfig.sinceIds[index] > sinceIdIndex ? UtilConfig.sinceIds[index] : sinceIdIndex;
     		try {
-				Thread.sleep(fiveMinutes);
+				Thread.sleep(oneMinute);
 			} catch (InterruptedException e) {
 				log.error("sleep error", e);
 				e.printStackTrace();

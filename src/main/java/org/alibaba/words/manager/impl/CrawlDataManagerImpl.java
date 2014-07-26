@@ -19,6 +19,8 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 	
 	private static final Logger log = Logger.getLogger(CrawlDataManagerImpl.class);
 	
+	private static final int count = 100;
+	
 	@Override
 	public TeResult<List<WeiBoDO>> getDataFromWeb(String accessToken, String nickName, long sinceId) {
 		TeResult<List<WeiBoDO>> teResult = new TeResult<List<WeiBoDO>>();
@@ -26,14 +28,15 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 		Timeline tm = new Timeline();
 		tm.client.setToken(accessToken);		
 		Paging page = new Paging();
+		page.setCount(count);
 		page.setSinceId(sinceId);
 		try {
 //			StatusWapper status = tm.getUserTimeline();
 //			StatusWapper status = tm.getUserTimelineByName(nickName, page, 0, 0);
-			StatusWapper status = tm.getFriendsTimeline(0, 0, new Paging(1));
+			StatusWapper status = tm.getFriendsTimeline(0, 1, page);
 			for(Status s : status.getStatuses()){
 				WeiBoDO weiBoDO = packWeiBoDO(s);
-				System.out.println(s.getText());
+				System.out.println(s.getUser().getScreenName()+"....."+s.getText());
 				weiBoDOList.add(weiBoDO);
 			}
 		} catch (WeiboException e) {			
