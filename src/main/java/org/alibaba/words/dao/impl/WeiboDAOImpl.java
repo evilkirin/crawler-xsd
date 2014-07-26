@@ -36,7 +36,7 @@ public class WeiboDAOImpl implements WeiboDAO{
 
 	@Override
 	public int batchInsert(List<WeiboDO> list) {
-		SqlSession session = MyBatisUtils.getFactory().openSession(ExecutorType.BATCH);
+		SqlSession session = factory.openSession(ExecutorType.BATCH);
         WeiboMapper mapper = session.getMapper(WeiboMapper.class);
         int count = 0, affectedLines = -1;
 		try {
