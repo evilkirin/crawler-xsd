@@ -19,22 +19,11 @@ import org.slf4j.LoggerFactory;
 
 public class WeiboDAOImpl implements WeiboDAO {
 	private static final Logger logger = LoggerFactory.getLogger(WeiboDAOImpl.class);
-	private static final WeiboDAOImpl that = new WeiboDAOImpl();
-	static {
-		that.init();
-	}
-
+	private static final WeiboDAOImpl instance = new WeiboDAOImpl();
 	private static final String CONFIG_PATH = "config/mybatis_config.xml";
     private static SqlSessionFactory factory;
 
     private WeiboDAOImpl() {
-    }
-
-    public static WeiboDAO getInstance() {
-    	return that;
-    }
-
-    public void init() {
     	InputStream stream = null;
 		try {
 			stream = Resources.getResourceAsStream(CONFIG_PATH);
@@ -43,6 +32,10 @@ public class WeiboDAOImpl implements WeiboDAO {
 		}
         factory = new SqlSessionFactoryBuilder()
                 .build(stream);
+    }
+
+    public static WeiboDAO getInstance() {
+    	return instance;
     }
 
 	@Override
