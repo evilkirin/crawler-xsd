@@ -43,10 +43,7 @@ public class Crawler implements Runnable {
 		WeiboDAO weiboDAO = WeiboDAOImpl.getInstance();
 
 		while (!currentThread.isInterrupted()) {
-			int pageCount = 1;
-			if (sinceId == UtilConfig.defaultSinceId) {
-				pageCount = maxPage;
-			}
+			int pageCount = sinceId == UtilConfig.defaultSinceId ? maxPage : 1;
 			long workingSinceId = sinceId;
 			for (int i = 1; i <= pageCount; i++) {
 				try {
@@ -54,7 +51,6 @@ public class Crawler implements Runnable {
 
 					if (i == 1) {
 						updateSinceId(list);
-						workingSinceId = sinceId;
 					}
 
 					int recordsInserted = weiboDAO.batchInsert(list);
@@ -134,7 +130,7 @@ public class Crawler implements Runnable {
 	private boolean updateSinceId(List<WeiboDO> list) {
 		long old = sinceId, newSinceId = -1;
 		for (WeiboDO weiBoDO : list) {
-			newSinceId = old > weiBoDO.getWeiboId() ? old : weiBoDO.getWeiboId();
+			newSinceId = newSinceId > weiBoDO.getWeiboId() ? newSinceId : weiBoDO.getWeiboId();
 		}
 		sinceId = old > newSinceId ? old : newSinceId;
 		return sinceId == old;
