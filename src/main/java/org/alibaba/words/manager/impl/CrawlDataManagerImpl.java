@@ -22,19 +22,10 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 	private static final int count = 100;
 	@Override
 	public CrawlerResult<List<WeiboDO>> getDataFromWeb(String accessToken, long sinceId) {
-		CrawlerResult<List<WeiboDO>> teResult = new CrawlerResult<List<WeiboDO>>();
-		List<WeiboDO> weiBoDOList = new ArrayList<WeiboDO>();
-		Timeline tm = new Timeline();
-		tm.client.setToken(accessToken);
-		Paging page = new Paging();
-		page.setCount(count);
-		page.setSinceId(sinceId);
+		CrawlerResult<List<WeiboDO>> crawlerResult = new CrawlerResult<List<WeiboDO>>();
+		List<WeiboDO> weiboDOList;
 		try {
-			StatusWapper status = tm.getFriendsTimeline(0, 0, page);
-			for(Status s : status.getStatuses()){
-				WeiboDO weiBoDO = packWeiBoDO(s);
-				weiBoDOList.add(weiBoDO);
-			}
+			weiboDOList = queryWeiboList(accessToken, sinceId);
 		} catch (WeiboException e) {
 			int errorCode = e.getErrorCode();
 			String errorInfo = e.getError();
@@ -42,20 +33,39 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 			logger.error("fail to query weibo info accessToken = " + accessToken + ", sinceId = " + sinceId, e);
 			if (10004 == errorCode || 10022 == errorCode || 10023 == errorCode || 10024 == errorCode) {
 				logger.error("Too many request, some rest is needed.");
-				teResult.setFailureResult(UtilConfig.ERROR_CODE_NEED_SLEEP, errorInfo);
-				return teResult;
+				crawlerResult.setFailureResult(UtilConfig.ERROR_CODE_NEED_SLEEP, errorInfo);
+				return crawlerResult;
 			}
 			if (10010 == errorCode || 10009 == errorCode) {
 				logger.error("Timeout, resume later.");
-				teResult.setFailureResult(UtilConfig.ERROR_CODE_TIME_EXCEPTION, errorInfo);
-				return teResult;
+				crawlerResult.setFailureResult(UtilConfig.ERROR_CODE_TIME_EXCEPTION, errorInfo);
+				return crawlerResult;
 			}
 			logger.error("Invalid parameters. Please check before execute.");
-			teResult.setFailureResult(UtilConfig.ERROR_CODE_METHOD_ERROR, errorInfo);
-			return teResult;
+			crawlerResult.setFailureResult(UtilConfig.ERROR_CODE_METHOD_ERROR, errorInfo);
+			return crawlerResult;
 		}
-		teResult.setModel(weiBoDOList);
-		return teResult;
+		crawlerResult.setModel(weiboDOList);
+		return crawlerResult;
+	}
+
+	private List<WeiboDO> queryWeiboList(String accessToken, long sinceId)
+			throws WeiboException {
+		List<WeiboDO> weiboDOList = new ArrayList<WeiboDO>();
+
+		Timeline tm = new Timeline();
+		tm.client.setToken(accessToken);
+
+		Paging page = new Paging();
+		page.setCount(count);
+		page.setSinceId(sinceId);
+
+		StatusWapper status = tm.getFriendsTimeline(0, 0, page);
+		for(Status s : status.getStatuses()){
+			WeiboDO weiBoDO = packWeiBoDO(s);
+			weiboDOList.add(weiBoDO);
+		}
+		return weiboDOList;
 	}
 
 	public WeiboDO packWeiBoDO(Status s) {

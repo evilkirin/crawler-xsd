@@ -17,7 +17,7 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WeiboDAOImpl implements WeiboDAO{
+public class WeiboDAOImpl implements WeiboDAO {
 	private static final Logger logger = LoggerFactory.getLogger(WeiboDAOImpl.class);
 	private static final WeiboDAOImpl that = new WeiboDAOImpl();
 	static {
@@ -52,6 +52,8 @@ public class WeiboDAOImpl implements WeiboDAO{
         int count = 0, affectedLines = -1;
         try {
         	for(WeiboDO weibo : list) {
+        		if(Thread.currentThread().isInterrupted())
+        			return count;
 				try {
 					affectedLines = mapper.insertOneWeibo(weibo);
 					session.commit();
