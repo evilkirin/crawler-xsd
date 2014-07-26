@@ -67,7 +67,7 @@ public class Crawler implements Runnable {
 	private long updateSinceId(CrawlerResult<List<WeiboDO>> crawlerResult) {
 		long sinceIdIndex = UtilConfig.sinceIds[index];
 		for (WeiboDO weiBoDO : crawlerResult.getModel()) {
-			sinceIdIndex = sinceIdIndex > weiBoDO.getId() ? sinceIdIndex : weiBoDO.getId();
+			sinceIdIndex = sinceIdIndex > weiBoDO.getWeiBoId() ? sinceIdIndex : weiBoDO.getWeiBoId();
 		}
 		UtilConfig.sinceIds[index] = UtilConfig.sinceIds[index] > sinceIdIndex ? UtilConfig.sinceIds[index]
 				: sinceIdIndex;
