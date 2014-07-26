@@ -19,9 +19,20 @@ import org.slf4j.LoggerFactory;
 
 public class WeiboDAOImpl implements WeiboDAO{
 	private static final Logger logger = LoggerFactory.getLogger(WeiboDAOImpl.class);
+	private static final WeiboDAOImpl that = new WeiboDAOImpl();
+	static {
+		that.init();
+	}
 
 	private static final String CONFIG_PATH = "config/mybatis_config.xml";
     private static SqlSessionFactory factory;
+
+    private WeiboDAOImpl() {
+    }
+
+    public static WeiboDAO getInstance() {
+    	return that;
+    }
 
     public void init() {
     	InputStream stream = null;
@@ -36,26 +47,21 @@ public class WeiboDAOImpl implements WeiboDAO{
 
 	@Override
 	public int batchInsert(List<WeiboDO> list) {
-		SqlSession session = factory.openSession(ExecutorType.BATCH);
+		SqlSession session = factory.openSession();
         WeiboMapper mapper = session.getMapper(WeiboMapper.class);
         int count = 0, affectedLines = -1;
-		try {
-			for(WeiboDO weibo : list) {
+        try {
+        	for(WeiboDO weibo : list) {
 				try {
 					affectedLines = mapper.insertOneWeibo(weibo);
-				} catch(Exception e) {
+					session.commit();
+				} catch(Throwable e) {
 					logger.error("Fail to insert one weibo:" + weibo, e);
 				}
 				if(affectedLines > 0)
 					count++;
 
 			}
-			session.flushStatements();
-			session.clearCache();
-			session.commit();
-		} catch(Exception e) {
-			e.printStackTrace();
-			session.rollback();
 		} finally {
 			session.close();
 		}

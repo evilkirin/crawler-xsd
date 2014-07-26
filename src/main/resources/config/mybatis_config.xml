@@ -21,6 +21,7 @@
     </environments>
 
     <mappers>
-        <mapper resource="mapper/VisitorMapper.xml" />
+        <mapper resource="mapper/VisitorMapper.xml"/>
+        <mapper resource="mapper/WeiboMapper.xml"/>
     </mappers>
 </configuration>

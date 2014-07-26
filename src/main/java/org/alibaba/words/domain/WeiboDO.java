@@ -28,19 +28,19 @@ public class WeiboDO {
 		this.id = id;
 	}
 
-	public long getWeiBoId() {
+	public long getWeiboId() {
 		return weiboId;
 	}
 
-	public void setWeiBoId(long weiBoId) {
+	public void setWeiboId(long weiBoId) {
 		this.weiboId = weiBoId;
 	}
 
-	public String getWeiBoText() {
+	public String getWeiboText() {
 		return weiboText;
 	}
 
-	public void setWeiBoText(String weiBoText) {
+	public void setWeiboText(String weiBoText) {
 		this.weiboText = weiBoText;
 	}
 

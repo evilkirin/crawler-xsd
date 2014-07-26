@@ -19,7 +19,6 @@ import weibo4j.model.WeiboException;
 public class CrawlDataManagerImpl implements CrawlDataManager{
 	private static final Logger logger = LoggerFactory.getLogger(CrawlDataManagerImpl.class);
 
-
 	private static final int count = 100;
 	@Override
 	public CrawlerResult<List<WeiboDO>> getDataFromWeb(String accessToken, String nickName, long sinceId) {
@@ -34,7 +33,6 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 			StatusWapper status = tm.getFriendsTimeline(0, 0, page);
 			for(Status s : status.getStatuses()){
 				WeiboDO weiBoDO = packWeiBoDO(s);
-				System.out.println(s.getText());
 				weiBoDOList.add(weiBoDO);
 			}
 		} catch (WeiboException e) {
@@ -62,8 +60,8 @@ public class CrawlDataManagerImpl implements CrawlDataManager{
 
 	public WeiboDO packWeiBoDO(Status s) {
 		WeiboDO weiBoDO = new WeiboDO();
-		weiBoDO.setWeiBoId(s.getIdstr());
-		weiBoDO.setWeiBoText(s.getText());
+		weiBoDO.setWeiboId(s.getIdstr());
+		weiBoDO.setWeiboText(s.getText());
 		weiBoDO.setCreatedTime(s.getCreatedAt());
 		weiBoDO.setUserId(s.getUser().getId());
 		weiBoDO.setNickName(s.getUser().getScreenName());

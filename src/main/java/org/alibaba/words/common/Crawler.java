@@ -20,7 +20,7 @@ public class Crawler implements Runnable {
 		System.out.println("#Thread " + index + " begins");
 		while (true) {
 			CrawlDataManager crawlDataManager = new CrawlDataManagerImpl();
-			WeiboDAO weiboDAO = new WeiboDAOImpl();
+			WeiboDAO weiboDAO = WeiboDAOImpl.getInstance();
 			CrawlerResult<List<WeiboDO>> crawlerResult = crawlDataManager.getDataFromWeb(
 					UtilConfig.accessTokens[index], UtilConfig.nickNames[index],
 					UtilConfig.sinceIds[index]);
@@ -51,7 +51,8 @@ public class Crawler implements Runnable {
 
 			weiboDAO.batchInsert(crawlerResult.getModel());
 
-			sleepFor5MinutesUnlessInterrupted();
+			return;
+			//sleepFor5MinutesUnlessInterrupted();
 		}
 	}
 
