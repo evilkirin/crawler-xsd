@@ -19,6 +19,7 @@
             </dataSource>
         </environment>
     </environments>
+
     <mappers>
         <mapper resource="mapper/VisitorMapper.xml" />
     </mappers>
