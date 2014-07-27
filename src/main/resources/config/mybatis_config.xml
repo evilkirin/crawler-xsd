@@ -4,7 +4,7 @@
   "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
     <typeAliases>
-        <typeAlias type="org.alibaba.words.domain.Visitor" alias="Visitor" />
+        <!-- typeAlias type="org.alibaba.words.domain.Visitor" alias="Visitor" -->
     </typeAliases>
     <environments default="development">
         <environment id="development">
