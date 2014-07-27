@@ -51,7 +51,7 @@ public class WeiboDAOImpl implements WeiboDAO {
 					affectedLines = mapper.insertOneWeibo(weibo);
 					session.commit();
 				} catch(Throwable e) {
-					logger.error("Fail to insert one weibo:" + weibo, e);
+					logger.info("Fail to insert one weibo:" + weibo + " due to duplicated weiboId.");
 				}
 				if(affectedLines > 0)
 					count++;

@@ -18,7 +18,7 @@ import weibo4j.model.WeiboException;
 
 public class Crawler implements Runnable {
 
-	private static final Logger logger = LoggerFactory.getLogger(WeiboDAOImpl.class);
+	private static final Logger logger = LoggerFactory.getLogger(Crawler.class);
 
 	public static final int count = 100;// 每次请求获取的记录条数，API限制最大设置为100
 
@@ -42,31 +42,36 @@ public class Crawler implements Runnable {
 
 		Thread currentThread = Thread.currentThread();
 
-		while (!currentThread.isInterrupted()) {
-			boolean initialLoad = sinceId == UtilConfig.defaultSinceId;
+		try {
+			while (!currentThread.isInterrupted()) {
+				boolean initialLoad = sinceId == UtilConfig.defaultSinceId;
 
-			try {
-				List<WeiboDO> list = queryWeiboList(getPage(sinceId, 1));
-				updateSinceId(list);
-				int recordsInserted = weiboDAO.batchInsert(list);
-				logger.info("# " + recordsInserted + " weibo inserted to the db.");
+				try {
+					List<WeiboDO> list = queryWeiboList(getPage(sinceId, 1));
+					updateSinceId(list);
+					int recordsInserted = weiboDAO.batchInsert(list);
+					logger.info("#Crawler " + index + " : " + recordsInserted + " weibo out of " + list.size() + " inserted to the db.");
 
-				if (initialLoad) {
-					loadMoreThanJustRecentWeibo();
+					if (initialLoad) {
+						loadMoreThanJustRecentWeibo();
+					}
+				} catch (WeiboException e) {
+					if (currentThread.isInterrupted())
+						return;
+					handleException(e);
 				}
-			} catch (WeiboException e) {
+
 				if (currentThread.isInterrupted())
 					return;
-				handleException(e);
+				logger.info("#Crawler " + index + " sleep for a while.");
+				TimeUnit.MINUTES.sleep(5);
 			}
-
-			if (currentThread.isInterrupted())
-				return;
-			sleepFor5MinutesUnlessInterrupted();
+		} catch(InterruptedException e) {
+			logger.info("#Crawler " + index + " exits.");
 		}
 	}
 
-	private void loadMoreThanJustRecentWeibo() {
+	private void loadMoreThanJustRecentWeibo() throws InterruptedException {
 		List<WeiboDO> list;
 		int recordsInserted;
 		for (int i = 2; i <= maxPage; i++) {
@@ -74,7 +79,7 @@ public class Crawler implements Runnable {
 				list = queryWeiboList(getPage(UtilConfig.defaultSinceId, i));
 
 				recordsInserted = weiboDAO.batchInsert(list);
-				logger.info("# " + recordsInserted + " weibo inserted to the db.");
+				logger.info("#Crawler " + index + " : " + recordsInserted + " weibo out of " + list.size() + " inserted to the db.");
 
 				int resultCount = list.size();
 				// 表示数据不够maxPage*count
@@ -88,19 +93,19 @@ public class Crawler implements Runnable {
 		}
 	}
 
-	private void handleException(WeiboException e) {
+	private void handleException(WeiboException e) throws InterruptedException {
 		int errorCode = e.getErrorCode();
 		logger.error("fail to query weibo info accessToken = " + accessToken + ", sinceId = "
 				+ sinceId, e);
 		if (isRequestTooFrequent(errorCode)) {
 			logger.error("Too many request, some rest is needed.");
-			sleepForOneHourUnlessInterrupted();
+			TimeUnit.HOURS.sleep(1);
 		} else if (isRequestTimeout(errorCode)) {
 			logger.error("Timeout, resume later.");
-			sleepFor5MinutesUnlessInterrupted();
+			TimeUnit.MINUTES.sleep(5);
 		} else {
 			logger.error("Invalid parameters. Please check before execute.");
-			throw new RuntimeException("Invalid configuration.");
+			throw new RuntimeException("Invalid configuration.", e);
 		}
 	}
 
@@ -113,19 +118,19 @@ public class Crawler implements Runnable {
 				|| 10024 == errorCode;
 	}
 
-	private Paging getPage(long currentSince, int i) {
-		Paging page = new Paging();
-		page.setCount(count);
-		page.setPage(i);
-		page.setSinceId(currentSince);
-		return page;
+	private Paging getPage(long currentSince, int page) {
+		Paging p = new Paging();
+		p.setCount(count);
+		p.setPage(page);
+		p.setSinceId(currentSince);
+		return p;
 	}
 
 	private List<WeiboDO> queryWeiboList(Paging page) throws WeiboException {
 		List<WeiboDO> weiboDOList = new ArrayList<WeiboDO>();
 
 		timeline.client.setToken(accessToken);
-		StatusWapper status = timeline.getFriendsTimeline(0, 0, page);
+		StatusWapper status = timeline.getFriendsTimeline(0, 1, page);
 		for (Status s : status.getStatuses()) {
 			WeiboDO weiBoDO = packWeiBoDO(s);
 			weiboDOList.add(weiBoDO);
@@ -152,24 +157,5 @@ public class Crawler implements Runnable {
 		}
 		sinceId = old > newSinceId ? old : newSinceId;
 		return sinceId == old;
-	}
-
-	private void sleepForOneHourUnlessInterrupted() {
-		try {
-			TimeUnit.HOURS.sleep(1);
-		} catch (InterruptedException e) {
-			logger.error("Thread interrupted", e);
-			e.printStackTrace();
-		}
-	}
-
-	private void sleepFor5MinutesUnlessInterrupted() {
-		logger.info("#Thread " + index + " sleeps for five minutes");
-		try {
-			TimeUnit.MINUTES.sleep(5);
-		} catch (InterruptedException e) {
-			logger.error("Thread interrupted", e);
-			e.printStackTrace();
-		}
 	}
 }
