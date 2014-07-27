@@ -78,8 +78,10 @@ public class Crawler implements Runnable {
 
 				int resultCount = list.size();
 				// 表示数据不够maxPage*count
-				// 注意，你要求每页取count条记录，api最多返回count-1条数据
-				if (resultCount < count - 1) {
+				//在实际测试微博api的过程中发现可能总条数显示1992条，每页100条，但是指定页数后每页取回的
+				//数量可能不满100，比如可能第2页有100条，第3页有98条，第4页有95条，所以这里我们设了一个容忍值，
+				//认为大于等于count-10条这一页就算取满，还需要往下一页取数据。
+				if (resultCount < count - 10) {
 					break;
 				}
 			} catch (WeiboException e) {
@@ -126,11 +128,12 @@ public class Crawler implements Runnable {
 
 		timeline.client.setToken(accessToken);
 		StatusWapper status = timeline.getFriendsTimeline(0, 1, page);
-
 		for (Status s : status.getStatuses()) {
 			WeiboDO weiBoDO = packWeiBoDO(s);
 			weiboDOList.add(weiBoDO);
 		}
+		System.out.println("page:"+page.getPage()+" totalCount:"+status.getTotalNumber()
+				+" pageCount:"+status.getStatuses().size());
 		return weiboDOList;
 	}
 
