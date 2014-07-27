@@ -15,15 +15,20 @@ import weibo4j.model.Paging;
 import weibo4j.model.Status;
 import weibo4j.model.StatusWapper;
 import weibo4j.model.WeiboException;
+import weibo4j.util.WeiboConfig;
 
 public class Crawler implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(Crawler.class);
 
-	public static final int count = 100;// 每次请求获取的记录条数，API限制最大设置为100
-
-	public static final int maxPage = 50;// 当sinceId为1时，也就是第一次请求数据时，为了满足数据量，会多次API请求
+	public static final int count = Integer
+			.parseInt(WeiboConfig.getValue("recordsPerRequest"));// 每次请求获取的记录条数，API限制最大设置为100
+	public static final int maxPage = Integer
+			.parseInt(WeiboConfig.getValue("maxPage"));// 当sinceId为1时，也就是第一次请求数据时，为了满足数据量，会多次API请求
 											// 但是受限于一个token一小时150次请求，所以这里请求50页数据
+	public static final int PULL_INTERVAL = Integer.parseInt(WeiboConfig
+			.getValue("pullInterval")); // minutes
+
 	private int index;
 	private String accessToken;
 	private long sinceId;
@@ -50,7 +55,8 @@ public class Crawler implements Runnable {
 					List<WeiboDO> list = queryWeiboList(getPage(sinceId, 1));
 					updateSinceId(list);
 					int recordsInserted = weiboDAO.batchInsert(list);
-					logger.info("#Crawler " + index + " : " + recordsInserted + " weibo out of " + list.size() + " inserted to the db.");
+					logger.info("#Crawler " + index + " : " + recordsInserted
+							+ " weibo out of " + list.size() + " inserted to the db.");
 
 					if (initialLoad) {
 						loadMoreThanJustRecentWeibo();
@@ -58,10 +64,10 @@ public class Crawler implements Runnable {
 				} catch (WeiboException e) {
 					handleException(e);
 				}
-				logger.info("#Crawler " + index + " sleep for a while.");
-				TimeUnit.MINUTES.sleep(5);
+				logger.info("#Crawler " + index + " sleep for " + PULL_INTERVAL + " minutes");
+				TimeUnit.MINUTES.sleep(PULL_INTERVAL);
 			}
-		} catch(InterruptedException e) {
+		} catch (InterruptedException e) {
 			logger.info("#Crawler " + index + " exits.");
 		}
 	}
@@ -74,13 +80,14 @@ public class Crawler implements Runnable {
 				list = queryWeiboList(getPage(UtilConfig.defaultSinceId, i));
 
 				recordsInserted = weiboDAO.batchInsert(list);
-				logger.info("#Crawler " + index + " : " + recordsInserted + " weibo out of " + list.size() + " inserted to the db.");
+				logger.info("#Crawler " + index + " : " + recordsInserted + " weibo out of "
+						+ list.size() + " inserted to the db.");
 
 				int resultCount = list.size();
 				// 表示数据不够maxPage*count
-				//在实际测试微博api的过程中发现可能总条数显示1992条，每页100条，但是指定页数后每页取回的
-				//数量可能不满100，比如可能第2页有100条，第3页有98条，第4页有95条，所以这里我们设了一个容忍值，
-				//认为大于等于count-10条这一页就算取满，还需要往下一页取数据。
+				// 在实际测试微博api的过程中发现可能总条数显示1992条，每页100条，但是指定页数后每页取回的
+				// 数量可能不满100，比如可能第2页有100条，第3页有98条，第4页有95条，所以这里我们设了一个容忍值，
+				// 认为大于等于count-10条这一页就算取满，还需要往下一页取数据。
 				if (resultCount < count - 10) {
 					break;
 				}
@@ -95,10 +102,10 @@ public class Crawler implements Runnable {
 		logger.error("fail to query weibo info accessToken = " + accessToken + ", sinceId = "
 				+ sinceId, e);
 		if (isRequestTooFrequent(errorCode)) {
-			logger.error("Too many request, some rest is needed.");
+			logger.error("#Crawler " + index + " : Too many request, some rest is needed.");
 			TimeUnit.HOURS.sleep(1);
 		} else if (isRequestTimeout(errorCode)) {
-			logger.error("Timeout, resume later.");
+			logger.error("#Crawler " + index + " : Timeout, resume later.");
 			TimeUnit.MINUTES.sleep(5);
 		} else {
 			logger.error("Invalid parameters. Please check before execute.");
@@ -132,8 +139,6 @@ public class Crawler implements Runnable {
 			WeiboDO weiBoDO = packWeiBoDO(s);
 			weiboDOList.add(weiBoDO);
 		}
-		System.out.println("page:"+page.getPage()+" totalCount:"+status.getTotalNumber()
-				+" pageCount:"+status.getStatuses().size());
 		return weiboDOList;
 	}
 

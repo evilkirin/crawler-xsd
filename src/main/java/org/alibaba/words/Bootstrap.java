@@ -17,7 +17,7 @@ public class Bootstrap {
 	private ExecutorService service;
 
 	public void start() {
-		for(int i = 0; i < 1; i++) {
+		for(int i = 0; i < UtilConfig.accessTokens.length; i++) {
 			Crawler worker = new Crawler(i + 1, UtilConfig.accessTokens[i]);
 			service.execute(worker);
 		}
