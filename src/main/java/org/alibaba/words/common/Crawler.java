@@ -7,6 +7,9 @@ import java.util.concurrent.TimeUnit;
 import org.alibaba.words.dao.WeiboDAO;
 import org.alibaba.words.dao.impl.WeiboDAOImpl;
 import org.alibaba.words.domain.WeiboDO;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,31 +18,45 @@ import weibo4j.model.Paging;
 import weibo4j.model.Status;
 import weibo4j.model.StatusWapper;
 import weibo4j.model.WeiboException;
-import weibo4j.util.WeiboConfig;
 
 public class Crawler implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(Crawler.class);
 
-	public static final int count = Integer
-			.parseInt(WeiboConfig.getValue("recordsPerRequest"));// 每次请求获取的记录条数，API限制最大设置为100
-	public static final int maxPage = Integer
-			.parseInt(WeiboConfig.getValue("maxPage"));// 当sinceId为1时，也就是第一次请求数据时，为了满足数据量，会多次API请求
-											// 但是受限于一个token一小时150次请求，所以这里请求50页数据
-	public static final int PULL_INTERVAL = Integer.parseInt(WeiboConfig
-			.getValue("pullInterval")); // minutes
-
 	private int index;
-	private String accessToken;
+	private String accessToken, zkNode;
 	private long sinceId;
 	private Timeline timeline;
+	private final ZooKeeper zk;
 	private static final WeiboDAO weiboDAO = WeiboDAOImpl.getInstance();
 
-	public Crawler(int index, String accessToken) {
+	public Crawler(int index, String accessToken, ZooKeeper zk) {
 		this.index = index;
 		this.accessToken = accessToken;
 		sinceId = 1;
 		timeline = new Timeline();
+		this.zk = zk;
+		zkNode = Config.SLOT_ROOT + "/" + accessToken;
+	}
+
+	public void init() throws KeeperException, InterruptedException {
+		Stat stat = null;
+		byte[] raw = null;
+		long data = 0l;
+		stat = zk.exists(zkNode, false);
+		if(stat != null) {
+			raw = zk.getData(zkNode, false, stat);
+			try {
+				data = Long.parseLong(new String(raw));
+			} catch (NumberFormatException e) {
+				e.printStackTrace();
+			}
+		} else {
+			raw = String.valueOf(1l).getBytes();
+			zk.setData(zkNode, raw, -1);
+		}
+		if(data > 0)
+			sinceId = data;
 	}
 
 	public void run() {
@@ -49,7 +66,7 @@ public class Crawler implements Runnable {
 
 		try {
 			while (!currentThread.isInterrupted()) {
-				boolean initialLoad = sinceId == UtilConfig.defaultSinceId;
+				boolean initialLoad = sinceId == Config.DEFAULT_SINCE_ID;
 
 				try {
 					List<WeiboDO> list = queryWeiboList(getPage(sinceId, 1));
@@ -64,20 +81,22 @@ public class Crawler implements Runnable {
 				} catch (WeiboException e) {
 					handleException(e);
 				}
-				logger.info("#Crawler " + index + " sleep for " + PULL_INTERVAL + " minutes");
-				TimeUnit.MINUTES.sleep(PULL_INTERVAL);
+				logger.info("#Crawler " + index + " sleep for " + Config.PULL_INTERVAL + " minutes");
+				TimeUnit.MINUTES.sleep(Config.PULL_INTERVAL);
 			}
 		} catch (InterruptedException e) {
 			logger.info("#Crawler " + index + " exits.");
+		} catch (RuntimeException re) {
+			logger.info("Unexpected runtime exception.", re);
 		}
 	}
 
 	private void loadMoreThanJustRecentWeibo() throws InterruptedException {
 		List<WeiboDO> list;
 		int recordsInserted;
-		for (int i = 2; i <= maxPage; i++) {
+		for (int i = 2; i <= Config.MAX_PAGE; i++) {
 			try {
-				list = queryWeiboList(getPage(UtilConfig.defaultSinceId, i));
+				list = queryWeiboList(getPage(Config.DEFAULT_SINCE_ID, i));
 
 				recordsInserted = weiboDAO.batchInsert(list);
 				logger.info("#Crawler " + index + " : " + recordsInserted + " weibo out of "
@@ -88,7 +107,7 @@ public class Crawler implements Runnable {
 				// 在实际测试微博api的过程中发现可能总条数显示1992条，每页100条，但是指定页数后每页取回的
 				// 数量可能不满100，比如可能第2页有100条，第3页有98条，第4页有95条，所以这里我们设了一个容忍值，
 				// 认为大于等于count-10条这一页就算取满，还需要往下一页取数据。
-				if (resultCount < count - 10) {
+				if (resultCount < Config.MAX_RECORDS_PER_REQUEST - 10) {
 					break;
 				}
 			} catch (WeiboException e) {
@@ -108,7 +127,7 @@ public class Crawler implements Runnable {
 			logger.error("#Crawler " + index + " : Timeout, resume later.");
 			TimeUnit.MINUTES.sleep(5);
 		} else {
-			logger.error("Invalid parameters. Please check before execute.");
+			logger.error("#Crawler " + index + " : Invalid parameters. Please check before execute.");
 			throw new RuntimeException("Invalid configuration.", e);
 		}
 	}
@@ -124,7 +143,7 @@ public class Crawler implements Runnable {
 
 	private Paging getPage(long currentSince, int page) {
 		Paging p = new Paging();
-		p.setCount(count);
+		p.setCount(Config.MAX_RECORDS_PER_REQUEST);
 		p.setPage(page);
 		p.setSinceId(currentSince);
 		return p;
@@ -154,12 +173,19 @@ public class Crawler implements Runnable {
 		return weiBoDO;
 	}
 
-	private boolean updateSinceId(List<WeiboDO> list) {
+	private void updateSinceId(List<WeiboDO> list) throws InterruptedException {
 		long old = sinceId, newSinceId = -1;
 		for (WeiboDO weiBoDO : list) {
 			newSinceId = newSinceId > weiBoDO.getWeiboId() ? newSinceId : weiBoDO.getWeiboId();
 		}
+		if(newSinceId - sinceId > 50) {
+			byte[] raw = String.valueOf(sinceId).getBytes();
+			try {
+				zk.setData(zkNode, raw, -1);
+			} catch (KeeperException e) {
+				logger.warn("It seems the sinceId sync operation with zk is failed.", e);
+			}
+		}
 		sinceId = old > newSinceId ? old : newSinceId;
-		return sinceId == old;
 	}
 }
