@@ -56,13 +56,8 @@ public class Crawler implements Runnable {
 						loadMoreThanJustRecentWeibo();
 					}
 				} catch (WeiboException e) {
-					if (currentThread.isInterrupted())
-						return;
 					handleException(e);
 				}
-
-				if (currentThread.isInterrupted())
-					return;
 				logger.info("#Crawler " + index + " sleep for a while.");
 				TimeUnit.MINUTES.sleep(5);
 			}
@@ -131,6 +126,7 @@ public class Crawler implements Runnable {
 
 		timeline.client.setToken(accessToken);
 		StatusWapper status = timeline.getFriendsTimeline(0, 1, page);
+
 		for (Status s : status.getStatuses()) {
 			WeiboDO weiBoDO = packWeiBoDO(s);
 			weiboDOList.add(weiBoDO);
