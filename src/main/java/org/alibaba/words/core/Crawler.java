@@ -10,7 +10,7 @@ import weibo4j.model.WeiboException;
 
 public interface Crawler {
 
-	public List<WeiboDO> queryWeiboList(Worker worker, Paging page) throws WeiboException;
+	public List<WeiboDO> queryWeiboList(Paging page) throws WeiboException;
 
 	public String getAccessToken();
 

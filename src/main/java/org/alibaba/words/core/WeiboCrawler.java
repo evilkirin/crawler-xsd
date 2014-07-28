@@ -35,7 +35,7 @@ public class WeiboCrawler implements Crawler {
 	}
 
 	@Override
-	public List<WeiboDO> queryWeiboList(Worker worker, Paging page) throws WeiboException {
+	public List<WeiboDO> queryWeiboList(Paging page) throws WeiboException {
 		List<WeiboDO> weiboDOList = new ArrayList<WeiboDO>();
 
 		getTimeline().client.setToken(getAccessToken());

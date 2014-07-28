@@ -72,7 +72,7 @@ public class Worker implements Runnable {
 				boolean initialLoad = sinceId == Config.DEFAULT_SINCE_ID;
 
 				try {
-					List<WeiboDO> list = crawler.queryWeiboList(this, getPage(sinceId, 1));
+					List<WeiboDO> list = crawler.queryWeiboList(getPage(sinceId, 1));
 					int recordsInserted = weiboDAO.batchInsert(list);
 					count += recordsInserted;
 					updateSinceId(list);
@@ -100,7 +100,7 @@ public class Worker implements Runnable {
 		int recordsInserted;
 		for (int i = 2; i <= Config.MAX_PAGE; i++) {
 			try {
-				list = crawler.queryWeiboList(this, getPage(Config.DEFAULT_SINCE_ID, i));
+				list = crawler.queryWeiboList(getPage(Config.DEFAULT_SINCE_ID, i));
 
 				recordsInserted = weiboDAO.batchInsert(list);
 				count += recordsInserted;
