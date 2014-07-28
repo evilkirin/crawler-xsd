@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public class Slot implements Watcher{
 
+	@SuppressWarnings("unused")
 	private static final Logger logger = LoggerFactory.getLogger(Slot.class);
 
 	private final String TOKEN = "token";

@@ -1,4 +1,5 @@
 package org.alibaba.words.common;
+
 import java.util.concurrent.locks.LockSupport;
 
 import org.apache.zookeeper.CreateMode;
@@ -12,7 +13,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Slot implements Watcher{
+public class Slot implements Watcher {
 
 	private static final Logger logger = LoggerFactory.getLogger(Slot.class);
 
@@ -30,8 +31,8 @@ public class Slot implements Watcher{
 			if (s == null) {
 				try {
 					zk.create(root, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-				} catch(KeeperException ke) {
-					if(ke.code() != KeeperException.Code.NODEEXISTS)
+				} catch (KeeperException ke) {
+					if (ke.code() != KeeperException.Code.NODEEXISTS)
 						throw ke;
 				}
 			}
@@ -41,26 +42,30 @@ public class Slot implements Watcher{
 	public void take() throws InterruptedException {
 		int retryCount = 2;
 		currentThread = Thread.currentThread();
-		while(true) {
+		while (true) {
 			try {
-				zk.create(root + "/" + TOKEN, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+				zk.create(root + "/" + TOKEN, new byte[0], Ids.OPEN_ACL_UNSAFE,
+						CreateMode.EPHEMERAL);
 				logger.warn("This node take the responsibility of pulling the weibo data!");
 				break;
-			} catch(KeeperException ke) {
-				if(ke.code() == KeeperException.Code.NODEEXISTS ) {
+			} catch (KeeperException ke) {
+				if (ke.code() == KeeperException.Code.NODEEXISTS) {
 					Stat stat = null;
 					try {
 						stat = zk.exists(root + "/" + TOKEN, this);
-					} catch(KeeperException e) {
-						throw new RuntimeException("Fail to query the state of the token node.");
+					} catch (KeeperException e) {
+						throw new RuntimeException(
+								"Fail to query the state of the token node.");
 					}
-					if(stat != null) {
+					if (stat != null) {
 						logger.warn("Some has already the the responsibility.");
 						LockSupport.park(this);
 					}
 				} else {
-					if(--retryCount < 0) {
-						throw new RuntimeException("Fail to create child node, but the reason is not that node already exists.", ke);
+					if (--retryCount < 0) {
+						throw new RuntimeException(
+								"Fail to create child node, but the reason is not that node already exists.",
+								ke);
 					}
 				}
 			}
@@ -69,11 +74,10 @@ public class Slot implements Watcher{
 
 	@Override
 	public void process(WatchedEvent event) {
-		if(event.getType() == EventType.NodeDeleted) {
+		if (event.getType() == EventType.NodeDeleted) {
 			LockSupport.unpark(currentThread);
 		}
 	}
-
 
 	public void leave() {
 		try {
@@ -83,4 +87,3 @@ public class Slot implements Watcher{
 		}
 	}
 }
-

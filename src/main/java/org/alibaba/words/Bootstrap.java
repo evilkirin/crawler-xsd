@@ -3,6 +3,7 @@ package org.alibaba.words;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.alibaba.words.common.Worker;
@@ -27,12 +28,8 @@ public class Bootstrap {
 	public void start() throws InterruptedException {
 		for(int i = 0; i < Config.accessTokens.length; i++) {
 			Worker worker = new Worker(i + 1, Config.accessTokens[i], zk);
-			try {
 				worker.init();
 				service.execute(worker);
-			} catch (KeeperException e) {
-				logger.error("Fail to initiate the crawler with accessToken:" + Config.accessTokens[i], e);
-			}
 		}
 	}
 
@@ -45,7 +42,18 @@ public class Bootstrap {
 		});
 		slot = new Slot(zk, Config.SLOT_ROOT);
 		slot.take();
-		service = Executors.newCachedThreadPool();
+		final ThreadGroup workerThreads = new ThreadGroup("hotwords-worker") {
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				logger.error("Thread:" + t.getName() + " exits with exception:", e);
+			}
+		};
+		service = Executors.newCachedThreadPool(new ThreadFactory() {
+			@Override
+			public Thread newThread(Runnable r) {
+				return new Thread(workerThreads, r);
+			}
+		});
 	}
 
 	public void stop() {
