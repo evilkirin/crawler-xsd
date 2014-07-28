@@ -1,4 +1,4 @@
-package org.alibaba.words.core;
+package org.alibaba.words.core.impl;
 
 import org.junit.Test;
 

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.alibaba.words.core.Crawler;
-import org.alibaba.words.core.WeiboCrawler;
+import org.alibaba.words.core.impl.WeiboCrawler;
 import org.alibaba.words.dao.WeiboDAO;
 import org.alibaba.words.dao.impl.WeiboDAOImpl;
 import org.alibaba.words.domain.WeiboDO;

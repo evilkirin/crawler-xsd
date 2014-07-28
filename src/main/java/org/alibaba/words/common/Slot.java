@@ -21,7 +21,7 @@ public class Slot implements Watcher{
 	private final String root;
 	private Thread currentThread;
 
-	public Slot(ZooKeeper zk, String addr, String root) throws KeeperException, InterruptedException {
+	public Slot(ZooKeeper zk, String root) throws KeeperException, InterruptedException {
 		this.root = root;
 		this.zk = zk;
 

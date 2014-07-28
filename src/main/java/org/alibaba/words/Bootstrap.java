@@ -43,7 +43,7 @@ public class Bootstrap {
 				logger.info(event.toString());
 			}
 		});
-		slot = new Slot(zk, Config.ZK_ADDR, Config.SLOT_ROOT);
+		slot = new Slot(zk, Config.SLOT_ROOT);
 		slot.take();
 		service = Executors.newCachedThreadPool();
 	}

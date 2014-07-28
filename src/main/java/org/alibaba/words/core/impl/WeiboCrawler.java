@@ -1,9 +1,10 @@
-package org.alibaba.words.core;
+package org.alibaba.words.core.impl;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.alibaba.words.common.Worker;
+import org.alibaba.words.core.Crawler;
 import org.alibaba.words.domain.WeiboDO;
 
 import weibo4j.Timeline;

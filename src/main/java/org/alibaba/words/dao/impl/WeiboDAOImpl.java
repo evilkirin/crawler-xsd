@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class WeiboDAOImpl implements WeiboDAO {
 	private static final Logger logger = LoggerFactory.getLogger(WeiboDAOImpl.class);
-	private static final WeiboDAOImpl instance = new WeiboDAOImpl();
+	private static final WeiboDAO instance = new WeiboDAOImpl();
 	private static final String CONFIG_PATH = "config/mybatis_config.xml";
     private static SqlSessionFactory factory;
 
@@ -39,7 +39,7 @@ public class WeiboDAOImpl implements WeiboDAO {
 	@Override
 	public int batchInsert(List<WeiboDO> list) {
 		SqlSession session = factory.openSession();
-        WeiboMapper mapper = session.getMapper(WeiboMapper.class);
+		WeiboMapper mapper = session.getMapper(WeiboMapper.class);
         int count = 0, affectedLines = -1;
         try {
         	for(WeiboDO weibo : list) {
@@ -60,6 +60,22 @@ public class WeiboDAOImpl implements WeiboDAO {
 			session.close();
 		}
 		return count;
+	}
+
+	@Override
+	public int deleteByUserId(String userId) {
+		SqlSession session = factory.openSession();
+		WeiboMapper mapper = session.getMapper(WeiboMapper.class);
+		int result = -1;
+		try {
+			 result = mapper.deleteByUserId(userId);
+			session.commit();
+		} catch (Throwable e) {
+			logger.error("Error delete by user id: " + userId, e);
+		} finally {
+			session.close();
+		}
+		return result;
 	}
 
 }
