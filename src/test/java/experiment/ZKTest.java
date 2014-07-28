@@ -1,4 +1,10 @@
+package experiment;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -127,5 +133,11 @@ public class ZKTest {
 		ZooKeeper zk = new ZooKeeper(ADDR, 5000, new MyWatcher());
 		List<String> children = zk.getChildren("/substatus", true);
 		System.out.println(children);
+	}
+
+	public void testReader() throws UnsupportedEncodingException {
+		InputStream resourceAsStream = ZKTest.class.getClassLoader().getResourceAsStream("");
+		InputStreamReader inr = new InputStreamReader(resourceAsStream, "utf-8");
+		BufferedReader br = new BufferedReader(inr);
 	}
 }

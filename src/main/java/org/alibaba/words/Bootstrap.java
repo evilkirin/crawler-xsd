@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.alibaba.words.common.Crawler;
+import org.alibaba.words.common.Worker;
 import org.alibaba.words.common.Slot;
 import org.alibaba.words.common.Config;
 import org.apache.zookeeper.KeeperException;
@@ -26,7 +26,7 @@ public class Bootstrap {
 
 	public void start() throws InterruptedException {
 		for(int i = 0; i < Config.accessTokens.length; i++) {
-			Crawler worker = new Crawler(i + 1, Config.accessTokens[i], zk);
+			Worker worker = new Worker(i + 1, Config.accessTokens[i], zk);
 			try {
 				worker.init();
 				service.execute(worker);
@@ -49,7 +49,6 @@ public class Bootstrap {
 	}
 
 	public void stop() {
-		slot.leave();
 		service.shutdown();
 		try {
 			service.awaitTermination(60, TimeUnit.SECONDS);

@@ -1,46 +1,44 @@
 package org.alibaba.words.common;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.alibaba.words.core.Crawler;
+import org.alibaba.words.core.WeiboCrawler;
 import org.alibaba.words.dao.WeiboDAO;
 import org.alibaba.words.dao.impl.WeiboDAOImpl;
 import org.alibaba.words.domain.WeiboDO;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import weibo4j.Timeline;
 import weibo4j.model.Paging;
-import weibo4j.model.Status;
-import weibo4j.model.StatusWapper;
 import weibo4j.model.WeiboException;
 
-public class Crawler implements Runnable {
+public class Worker implements Runnable {
 
-	private static final Logger logger = LoggerFactory.getLogger(Crawler.class);
+	private static final Logger logger = LoggerFactory.getLogger(Worker.class);
 
 	private int index;
-	private String accessToken, zkNode;
+	private String zkNode;
 	private long sinceId;
-	private Timeline timeline;
+	private final Crawler crawler;
+
 	private final ZooKeeper zk;
 	private int count = 0;
 	private int lastSyncCount = 0;
 	private static final WeiboDAO weiboDAO = WeiboDAOImpl.getInstance();
 
-	public Crawler(int index, String accessToken, ZooKeeper zk) {
+	public Worker(int index, String accessToken, ZooKeeper zk) {
 		this.index = index;
-		this.accessToken = accessToken;
 		sinceId = 1;
-		timeline = new Timeline();
 		this.zk = zk;
 		zkNode = Config.SLOT_ROOT + "/" + accessToken;
+		crawler = new WeiboCrawler(accessToken);
 	}
 
 	public void init() throws KeeperException, InterruptedException {
@@ -74,7 +72,7 @@ public class Crawler implements Runnable {
 				boolean initialLoad = sinceId == Config.DEFAULT_SINCE_ID;
 
 				try {
-					List<WeiboDO> list = queryWeiboList(getPage(sinceId, 1));
+					List<WeiboDO> list = crawler.queryWeiboList(this, getPage(sinceId, 1));
 					int recordsInserted = weiboDAO.batchInsert(list);
 					count += recordsInserted;
 					updateSinceId(list);
@@ -87,7 +85,7 @@ public class Crawler implements Runnable {
 				} catch (WeiboException e) {
 					handleException(e);
 				}
-				logger.info("#Crawler " + index + " sleep for " + Config.PULL_INTERVAL + " minutes");
+				logger.info("#Crawler " + index + " sleep for " + Config.PULL_INTERVAL + " minutes" + " token:" + crawler.getAccessToken());
 				TimeUnit.MINUTES.sleep(Config.PULL_INTERVAL);
 			}
 		} catch (InterruptedException e) {
@@ -102,7 +100,7 @@ public class Crawler implements Runnable {
 		int recordsInserted;
 		for (int i = 2; i <= Config.MAX_PAGE; i++) {
 			try {
-				list = queryWeiboList(getPage(Config.DEFAULT_SINCE_ID, i));
+				list = crawler.queryWeiboList(this, getPage(Config.DEFAULT_SINCE_ID, i));
 
 				recordsInserted = weiboDAO.batchInsert(list);
 				count += recordsInserted;
@@ -125,7 +123,7 @@ public class Crawler implements Runnable {
 
 	private void handleException(WeiboException e) throws InterruptedException {
 		int errorCode = e.getErrorCode();
-		logger.error("fail to query weibo info accessToken = " + accessToken + ", sinceId = "
+		logger.error("fail to query weibo info accessToken = " + crawler.getAccessToken() + ", sinceId = "
 				+ sinceId, e);
 		if (isRequestTooFrequent(errorCode)) {
 			logger.error("#Crawler " + index + " : Too many request, some rest is needed. " + errorCode);
@@ -154,30 +152,6 @@ public class Crawler implements Runnable {
 		p.setPage(page);
 		p.setSinceId(currentSince);
 		return p;
-	}
-
-	private List<WeiboDO> queryWeiboList(Paging page) throws WeiboException {
-		List<WeiboDO> weiboDOList = new ArrayList<WeiboDO>();
-
-		timeline.client.setToken(accessToken);
-		StatusWapper status = timeline.getFriendsTimeline(0, 1, page);
-		for (Status s : status.getStatuses()) {
-			WeiboDO weiBoDO = packWeiBoDO(s);
-			weiboDOList.add(weiBoDO);
-		}
-		return weiboDOList;
-	}
-
-	public WeiboDO packWeiBoDO(Status s) {
-		WeiboDO weiBoDO = new WeiboDO();
-		weiBoDO.setWeiboId(s.getIdstr());
-		weiBoDO.setWeiboText(s.getText());
-		weiBoDO.setCreatedTime(s.getCreatedAt());
-		weiBoDO.setUserId(s.getUser().getId());
-		weiBoDO.setNickName(s.getUser().getScreenName());
-		weiBoDO.setRepostsCount(s.getRepostsCount());
-		weiBoDO.setCommentsCount(s.getCommentsCount());
-		return weiBoDO;
 	}
 
 	private void updateSinceId(List<WeiboDO> list) throws InterruptedException {
