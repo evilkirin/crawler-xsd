@@ -16,19 +16,20 @@ import weibo4j.util.WeiboConfig;
 public class RefreshAccessTokenUtil {
 
 	private static String clientId;			// appKey
+	@SuppressWarnings("unused")
 	private static String clientSecret;		// appSecret
 	private static List<AccountInfo> accountInfoList = new ArrayList<AccountInfo>();
 	private static List<String> accessToken = new ArrayList<String>();				// 每个用户对应的access_token
 	private static final Logger logger = Logger.getLogger(RefreshAccessTokenUtil.class);
-	
+
 	public static void main(String[] args){
 		RefreshAccessTokenUtil.generate();
 	}
-	
+
 	public List<String> getTokenList(){
 		return accessToken;
 	}
-	
+
 	public static void initData(){
 		clientId = WeiboConfig.getValue("client_ID");
 		//System.out.println("clientId:"+clientId);
@@ -44,7 +45,7 @@ public class RefreshAccessTokenUtil {
 			//System.out.println(ai.getUserId()+"..."+ai.getPwd());
 		}
 	}
-	
+
 	private static void updateAccessToken(){
 		StringBuffer buffer = new StringBuffer();
 		for(int i=0;i<accessToken.size();i++){
@@ -67,7 +68,7 @@ public class RefreshAccessTokenUtil {
 			// https://api.weibo.com/oauth2/authorize?client_id=750123511&redirect_uri=https://api.weibo.com/oauth2/default.html&response_type=code
 			String url = "https://api.weibo.com/oauth2/authorize";
 			String redirectUri = "https://api.weibo.com/oauth2/default.html";
-			
+
 			for (int i = 0; i < accountInfoList.size(); i++) {
 
 				// 构造授权的url参数
@@ -114,9 +115,9 @@ public class RefreshAccessTokenUtil {
 					logger.error("用户授权失败了！");
 				}
 			}
-			
+
 			updateAccessToken();
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("授权发生异常！");
