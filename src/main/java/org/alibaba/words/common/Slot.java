@@ -50,13 +50,13 @@ public class Slot implements Watcher{
 				if(ke.code() == KeeperException.Code.NODEEXISTS ) {
 					Stat stat = null;
 					try {
-						stat = zk.exists(root + "/" + TOKEN, true);
+						stat = zk.exists(root + "/" + TOKEN, this);
 					} catch(KeeperException e) {
 						throw new RuntimeException("Fail to query the state of the token node.");
 					}
 					if(stat != null) {
-						LockSupport.park(this);
 						logger.warn("Some has already the the responsibility.");
+						LockSupport.park(this);
 					}
 				} else {
 					if(--retryCount < 0) {

@@ -9,6 +9,8 @@ import org.alibaba.words.common.Crawler;
 import org.alibaba.words.common.Slot;
 import org.alibaba.words.common.Config;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +37,19 @@ public class Bootstrap {
 	}
 
 	public void init() throws IOException, KeeperException, InterruptedException {
-		zk = new ZooKeeper(Config.ZK_ADDR, Config.CONNECT_TIMEOUT, null);
+		zk = new ZooKeeper(Config.ZK_ADDR, Config.CONNECT_TIMEOUT, new Watcher() {
+			@Override
+			public void process(WatchedEvent event) {
+				logger.info(event.toString());
+			}
+		});
 		slot = new Slot(zk, Config.ZK_ADDR, Config.SLOT_ROOT);
 		slot.take();
 		service = Executors.newCachedThreadPool();
 	}
 
 	public void stop() {
+		slot.leave();
 		service.shutdown();
 		try {
 			service.awaitTermination(60, TimeUnit.SECONDS);

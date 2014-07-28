@@ -8,9 +8,7 @@ import java.util.List;
 import org.alibaba.words.dao.WeiboDAO;
 import org.alibaba.words.domain.WeiboDO;
 import org.alibaba.words.mapper.WeiboMapper;
-import org.alibaba.words.util.MyBatisUtils;
 import org.apache.ibatis.io.Resources;
-import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
@@ -49,9 +47,10 @@ public class WeiboDAOImpl implements WeiboDAO {
         			return count;
 				try {
 					affectedLines = mapper.insertOneWeibo(weibo);
+					logger.warn("content: " + weibo.getWeiboText());
 					session.commit();
 				} catch(Throwable e) {
-					logger.info("Fail to insert one weibo:" + weibo + " due to duplicated weiboId.");
+					logger.warn("Fail to insert one weibo:" + weibo + " due to duplicated weiboId.", e);
 				}
 				if(affectedLines > 0)
 					count++;

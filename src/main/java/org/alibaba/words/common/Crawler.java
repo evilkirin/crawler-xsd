@@ -7,8 +7,10 @@ import java.util.concurrent.TimeUnit;
 import org.alibaba.words.dao.WeiboDAO;
 import org.alibaba.words.dao.impl.WeiboDAOImpl;
 import org.alibaba.words.domain.WeiboDO;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,8 @@ public class Crawler implements Runnable {
 	private long sinceId;
 	private Timeline timeline;
 	private final ZooKeeper zk;
+	private int count = 0;
+	private int lastSyncCount = 0;
 	private static final WeiboDAO weiboDAO = WeiboDAOImpl.getInstance();
 
 	public Crawler(int index, String accessToken, ZooKeeper zk) {
@@ -52,6 +56,7 @@ public class Crawler implements Runnable {
 				e.printStackTrace();
 			}
 		} else {
+			zk.create(zkNode, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 			raw = String.valueOf(1l).getBytes();
 			zk.setData(zkNode, raw, -1);
 		}
@@ -70,10 +75,11 @@ public class Crawler implements Runnable {
 
 				try {
 					List<WeiboDO> list = queryWeiboList(getPage(sinceId, 1));
-					updateSinceId(list);
 					int recordsInserted = weiboDAO.batchInsert(list);
+					count += recordsInserted;
+					updateSinceId(list);
 					logger.info("#Crawler " + index + " : " + recordsInserted
-							+ " weibo out of " + list.size() + " inserted to the db.");
+							+ " weibo out of " + list.size() + " inserted to the db. Total : " + count);
 
 					if (initialLoad) {
 						loadMoreThanJustRecentWeibo();
@@ -99,8 +105,9 @@ public class Crawler implements Runnable {
 				list = queryWeiboList(getPage(Config.DEFAULT_SINCE_ID, i));
 
 				recordsInserted = weiboDAO.batchInsert(list);
+				count += recordsInserted;
 				logger.info("#Crawler " + index + " : " + recordsInserted + " weibo out of "
-						+ list.size() + " inserted to the db.");
+						+ list.size() + " inserted to the db. Total : " + count);
 
 				int resultCount = list.size();
 				// 表示数据不够maxPage*count
@@ -121,10 +128,10 @@ public class Crawler implements Runnable {
 		logger.error("fail to query weibo info accessToken = " + accessToken + ", sinceId = "
 				+ sinceId, e);
 		if (isRequestTooFrequent(errorCode)) {
-			logger.error("#Crawler " + index + " : Too many request, some rest is needed.");
+			logger.error("#Crawler " + index + " : Too many request, some rest is needed. " + errorCode);
 			TimeUnit.HOURS.sleep(1);
 		} else if (isRequestTimeout(errorCode)) {
-			logger.error("#Crawler " + index + " : Timeout, resume later.");
+			logger.error("#Crawler " + index + " : Timeout, resume later." + errorCode);
 			TimeUnit.MINUTES.sleep(5);
 		} else {
 			logger.error("#Crawler " + index + " : Invalid parameters. Please check before execute.");
@@ -174,18 +181,19 @@ public class Crawler implements Runnable {
 	}
 
 	private void updateSinceId(List<WeiboDO> list) throws InterruptedException {
-		long old = sinceId, newSinceId = -1;
+		long old = sinceId, newSinceId = 0;
 		for (WeiboDO weiBoDO : list) {
 			newSinceId = newSinceId > weiBoDO.getWeiboId() ? newSinceId : weiBoDO.getWeiboId();
 		}
-		if(newSinceId - sinceId > 50) {
+		sinceId = old > newSinceId ? old : newSinceId;
+		if(count - lastSyncCount > 25) {
 			byte[] raw = String.valueOf(sinceId).getBytes();
 			try {
 				zk.setData(zkNode, raw, -1);
 			} catch (KeeperException e) {
 				logger.warn("It seems the sinceId sync operation with zk is failed.", e);
 			}
+			lastSyncCount = count;
 		}
-		sinceId = old > newSinceId ? old : newSinceId;
 	}
 }

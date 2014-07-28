@@ -13,9 +13,9 @@
                 <property name="driver" value="com.mysql.jdbc.Driver" />
                 <!-- ?useUnicode=true&amp;characterEncoding=utf8为了支持中文插入 -->
                 <property name="url"
-                    value="jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&amp;characterEncoding=utf8" />
+                    value="jdbc:mysql://10.101.84.100:3306/corpus?useUnicode=true&amp;characterEncoding=utf8" />
                 <property name="username" value="root" />
-                <property name="password" value="root" />
+                <property name="password" value="123456" />
             </dataSource>
         </environment>
     </environments>

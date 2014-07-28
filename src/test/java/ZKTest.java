@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -11,7 +10,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.Test;
-
 
 public class ZKTest {
 
@@ -25,17 +23,26 @@ public class ZKTest {
 
 			@Override
 			public void run() {
+				Slot s;
 				try {
-					Slot s = new Slot(ADDR, SLOT_ROOT);
+					s = new Slot(ADDR, SLOT_ROOT);
 					System.out.println("Thread a try to take the slot " + new Date());
 					s.take();
 					System.out.println("Thread a successfully take the slot " + new Date());
 					TimeUnit.SECONDS.sleep(5);
 					s.leave();
 					System.out.println("Thread a exits");
-				} catch (IOException | KeeperException | InterruptedException e) {
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (KeeperException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+
 			}
 
 		}).start();
@@ -44,15 +51,24 @@ public class ZKTest {
 
 			@Override
 			public void run() {
+
 				try {
 					System.out.println("Thread b try to take the slot " + new Date());
-					Slot s = new Slot(ADDR, SLOT_ROOT);
+					Slot s;
+					s = new Slot(ADDR, SLOT_ROOT);
 					s.take();
 					System.out.println("Thread b successfully take the slot " + new Date());
-				} catch (IOException | KeeperException | InterruptedException e) {
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (KeeperException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+
 			}
 
 		}).start();
@@ -74,15 +90,16 @@ public class ZKTest {
 			boolean result = false;
 			try {
 				result = barrier.enter();
-			} catch (KeeperException | InterruptedException e) {
+			} catch (KeeperException e) {
 				e.printStackTrace();
 				return;
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
-			if(result) {
+			if (result) {
 				System.out.println("Worker " + index + " successfully enters the barrier");
 			}
 		}
-
 	}
 
 	@Test
@@ -90,7 +107,7 @@ public class ZKTest {
 		Worker w1 = new Worker();
 		Worker w2 = new Worker();
 		ExecutorService service = Executors.newFixedThreadPool(2);
-		service .submit(w1);
+		service.submit(w1);
 		service.submit(w2);
 		TimeUnit.SECONDS.sleep(30);
 		System.out.println("Test finishi");
