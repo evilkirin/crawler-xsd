@@ -6,16 +6,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.alibaba.words.common.Worker;
-import org.alibaba.words.common.Slot;
 import org.alibaba.words.common.Config;
+import org.alibaba.words.common.Slot;
+import org.alibaba.words.common.Worker;
+import org.alibaba.words.core.impl.WeiboCrawler;
+import org.alibaba.words.core.impl.ZKRemoteStateManager;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class Bootstrap {
 
@@ -26,10 +27,11 @@ public class Bootstrap {
 	private Slot slot;
 
 	public void start() throws InterruptedException {
-		for(int i = 0; i < Config.accessTokens.length; i++) {
-			Worker worker = new Worker(i + 1, Config.accessTokens[i], zk);
-				worker.init();
-				service.execute(worker);
+		for (int i = 0; i < Config.accessTokens.length; i++) {
+			Worker worker = new Worker(i + 1, new ZKRemoteStateManager(Config.SLOT_ROOT + "/"
+					+ Config.accessTokens[i], zk), new WeiboCrawler(Config.accessTokens[i]));
+			worker.init();
+			service.execute(worker);
 		}
 	}
 
@@ -76,5 +78,3 @@ public class Bootstrap {
 		}
 	}
 }
-
-

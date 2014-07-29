@@ -30,7 +30,7 @@ public class ZKRemoteStateManager implements RemoteStateManager<Long> {
 	}
 
 	@Override
-	public void syncState(Long sinceId) throws InterruptedException {
+	public void update(Long sinceId) throws InterruptedException {
 		byte[] raw = String.valueOf(sinceId).getBytes();
 		try {
 			getZk().setData(getZkNode(), raw, -1);
@@ -40,7 +40,7 @@ public class ZKRemoteStateManager implements RemoteStateManager<Long> {
 	}
 
 	@Override
-	public Long initialState() throws InterruptedException {
+	public Long query() throws InterruptedException {
 		Stat stat = null;
 		byte[] raw = null;
 		long data = 0l;

@@ -56,7 +56,7 @@ public class WeiboCrawler implements Crawler {
 
 	private void loadMoreThanJustRecentWeibo(List<WeiboDO> list) throws InterruptedException {
 		for (int i = 2; i <= Config.MAX_PAGE; i++) {
-			int resultCount = innerQuery(getPage(Config.DEFAULT_SINCE_ID, i, Config.MAX_RECORDS_PER_REQUEST), list);
+			int resultCount = innerQuery(getPageForInitialLoad(i), list);
 			// 表示数据不够maxPage*count
 			// 在实际测试微博api的过程中发现可能总条数显示1992条，每页100条，但是指定页数后每页取回的
 			// 数量可能不满100，比如可能第2页有100条，第3页有98条，第4页有95条，所以这里我们设了一个容忍值，
@@ -65,6 +65,10 @@ public class WeiboCrawler implements Crawler {
 				break;
 			}
 		}
+	}
+
+	private Paging getPageForInitialLoad(int page) {
+		return getPage(Config.DEFAULT_SINCE_ID, page, Config.MAX_RECORDS_PER_REQUEST);
 	}
 
 	private Paging getPage(long since, int page, int count) {

@@ -7,7 +7,7 @@ public class Config {
 	public static String[] accessTokens;
 
 	public static final int DEFAULT_SINCE_ID = 1;
-	public static final String SLOT_ROOT = "/xieyu_crawler_beta_3";
+	public static final String SLOT_ROOT = WeiboConfig.getValue("slotRoot");
 
 	public static final int MAX_RECORDS_PER_REQUEST = Integer
 			.parseInt(WeiboConfig.getValue("recordsPerRequest"));// 每次请求获取的记录条数，API限制最大设置为100

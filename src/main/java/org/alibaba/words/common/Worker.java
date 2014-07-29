@@ -5,12 +5,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.alibaba.words.core.Crawler;
 import org.alibaba.words.core.RemoteStateManager;
-import org.alibaba.words.core.impl.WeiboCrawler;
-import org.alibaba.words.core.impl.ZKRemoteStateManager;
 import org.alibaba.words.dao.WeiboDAO;
 import org.alibaba.words.dao.impl.WeiboDAOImpl;
 import org.alibaba.words.domain.WeiboDO;
-import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,17 +24,20 @@ public class Worker implements Runnable {
 	private final Crawler crawler;
 	private final RemoteStateManager<Long> stateManager;
 
-	public Worker(int index, String accessToken, ZooKeeper zk) {
+	public Worker(int index, RemoteStateManager<Long> stateManager,
+			Crawler crawler) {
 		this.index = index;
 		sinceId = 1;
-		stateManager = new ZKRemoteStateManager(Config.SLOT_ROOT + "/" + accessToken, zk);
-		crawler = new WeiboCrawler(accessToken);
+		this.stateManager = stateManager;
+		this.crawler = crawler;
 	}
 
 	public void init() throws InterruptedException {
-		long data = stateManager.initialState();
-		if (data > 0)
+		long data = (Long) stateManager.query();
+		if (data > 0) {
 			sinceId = data;
+		}
+		logger.info("#Worker " + index + " starts pulling from sinceId :" + sinceId);
 	}
 
 	public void run() {
@@ -70,7 +70,7 @@ public class Worker implements Runnable {
 		}
 		sinceId = old > newSinceId ? old : newSinceId;
 		if (count - lastSyncCount > 25) {
-			stateManager.syncState(sinceId);
+			stateManager.update(sinceId);
 			lastSyncCount = count;
 		}
 	}
