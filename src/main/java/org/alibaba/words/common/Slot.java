@@ -46,7 +46,9 @@ public class Slot implements Watcher {
 			try {
 				zk.create(root + "/" + TOKEN, new byte[0], Ids.OPEN_ACL_UNSAFE,
 						CreateMode.EPHEMERAL);
-				logger.warn("This node take the responsibility of pulling the weibo data!");
+				if(logger.isInfoEnabled()) {
+					logger.info("This node take the responsibility of pulling the weibo data!");
+				}
 				break;
 			} catch (KeeperException ke) {
 				if (ke.code() == KeeperException.Code.NODEEXISTS) {

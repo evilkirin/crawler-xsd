@@ -37,7 +37,9 @@ public class Worker implements Runnable {
 		if (data > 0) {
 			sinceId = data;
 		}
-		logger.info("#Worker " + index + " starts pulling from sinceId :" + sinceId);
+		if(logger.isInfoEnabled()) {
+			logger.info("#Worker " + index + " starts pulling from sinceId :" + sinceId);
+		}
 	}
 
 	public void run() {
@@ -57,9 +59,9 @@ public class Worker implements Runnable {
 				TimeUnit.MINUTES.sleep(Config.PULL_INTERVAL);
 			}
 		} catch (InterruptedException e) {
-			logger.info("#Worker " + index + " exits.");
+			logger.error("#Worker " + index + " exits.");
 		} catch (RuntimeException re) {
-			logger.info("Unexpected runtime exception.", re);
+			logger.error("Unexpected runtime exception.", re);
 		}
 	}
 

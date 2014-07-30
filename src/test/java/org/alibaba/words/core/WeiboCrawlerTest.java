@@ -8,8 +8,6 @@ import org.alibaba.words.domain.WeiboDO;
 import org.junit.Assert;
 import org.junit.Test;
 
-import weibo4j.model.Paging;
-
 
 public class WeiboCrawlerTest {
 
